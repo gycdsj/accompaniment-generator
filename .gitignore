@@ -1,0 +1,16 @@
+# 敏感信息
+cookies.txt
+*.cookies.txt
+youtube_cookies.txt
+
+# 输出文件
+output/
+*.mp3
+*.wav
+*.flac
+
+# Python 缓存
+__pycache__/
+*.pyc
+.venv/
+venv/
