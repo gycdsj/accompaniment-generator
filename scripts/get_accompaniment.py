@@ -5,20 +5,23 @@ get_accompaniment.py — 伴奏生成工具
 从 YouTube 搜索下载音频 → AI 分离人声/伴奏
 
 用法:
-  # 搜索 YouTube 下载（需要 cookies）
+  # 搜索 YouTube 下载（自动使用浏览器 cookies）
   python3 get_accompaniment.py "晴天" "周杰伦"
 
-  # 提供 cookies 文件
-  python3 get_accompaniment.py "晴天" "周杰伦" --cookies cookies.txt
-
   # 直接提供视频 URL
-  python3 get_accompaniment.py --url "https://youtube.com/watch?v=xxx" --cookies cookies.txt
+  python3 get_accompaniment.py --url "https://youtube.com/watch?v=xxx"
+
+  # 显式指定 cookies 文件
+  python3 get_accompaniment.py "晴天" "周杰伦" --cookies cookies.txt
 
   # 处理本地音频文件（不需要网络）
   python3 get_accompaniment.py --file /path/to/song.mp3
 
   # JSON 输出（供 agent 解析）
-  python3 get_accompaniment.py "晴天" "周杰伦" --cookies cookies.txt --json
+  python3 get_accompaniment.py "晴天" "周杰伦" --json
+
+💡 无需手动导出 cookies！脚本会自动从本地 Chrome 浏览器提取登录态。
+  如果 Chrome 不可用，再通过 --cookies 手动指定 cookies 文件。
 
 依赖:
   pip install yt-dlp
@@ -96,7 +99,7 @@ def search_youtube(query, max_results=5):
 # ─── YouTube 音频下载 ───
 
 def download_youtube_audio(video_url, output_path, cookies_file=None):
-    """下载 YouTube 音频。推荐提供 cookies。"""
+    """下载 YouTube 音频。优先使用浏览器 cookies，fallback 到 cookies 文件。"""
     cmd = [
         'yt-dlp', '-f', 'bestaudio/best',
         '--extract-audio', '--audio-format', 'mp3',
@@ -113,7 +116,7 @@ def download_youtube_audio(video_url, output_path, cookies_file=None):
     if os.path.exists(deno_path):
         cmd.extend(['--js-runtimes', f'deno:{deno_path}'])
 
-    # cookies
+    # cookies 策略：优先 cookies-from-browser，其次手动指定
     if cookies_file:
         resolved = os.path.abspath(cookies_file) if not os.path.isabs(cookies_file) else cookies_file
         if os.path.exists(resolved):
@@ -122,10 +125,25 @@ def download_youtube_audio(video_url, output_path, cookies_file=None):
             log(f"⚠️  cookies 文件不存在: {resolved}")
             return None, "COOKIES_FILE_NOT_FOUND"
     else:
-        # 尝试默认位置
-        default_cookies = os.path.expanduser("~/.yt-dlp/cookies.txt")
-        if os.path.exists(default_cookies):
-            cmd.extend(['--cookies', default_cookies])
+        # 默认使用浏览器 cookies（最省事）
+        cmd.extend(['--cookies-from-browser', 'chrome'])
+
+    cmd.append(video_url)
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        if result.returncode == 0:
+            files = find_audio_files(output_path)
+            if files:
+                return files[0], None
+            return None, "NO_AUDIO_FILE"
+        else:
+            err = result.stderr or ""
+            if "Sign in" in err or "bot" in err:
+                return None, "NEEDS_COOKIES"
+            return None, f"YT_DLP_ERROR: {err[-200:]}"
+    except subprocess.TimeoutExpired:
+        return None, "TIMEOUT"
 
     cmd.append(video_url)
 
@@ -301,13 +319,14 @@ def main():
 
         if err == "NEEDS_COOKIES":
             print("""
-❌ YouTube 需要 cookies 认证。
+❌ YouTube 需要登录认证。
 
-💡 解决方法:
-  1. Chrome 安装扩展 "Get cookies.txt LOCALLY"
-  2. 访问 youtube.com（登录 Google 账号）
-  3. 点扩展图标 → Export → 保存 cookies.txt
-  4. 用 --cookies cookies.txt 重试
+💡 请确保已在 Chrome 中登录 Google 账号，脚本会自动提取浏览器 cookies。
+   运行命令: yt-dlp --cookies-from-browser chrome ...
+
+   如果 Chrome 不可用，用 --cookies cookies.txt 手动指定 cookies 文件:
+   1. Chrome 扩展 "Get cookies.txt LOCALLY" → 导出
+   2. python3 get_accompaniment.py --cookies cookies.txt
 """)
             sys.exit(1)
 

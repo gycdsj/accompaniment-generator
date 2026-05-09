@@ -9,14 +9,17 @@ description: 从 YouTube 或本地音频文件分离人声和伴奏，生成纯�
 
 从歌曲中分离人声，输出纯伴奏音乐。核心流程：获取音频 → Demucs AI 分离人声/伴奏 → 输出 MP3。
 
+> 💡 **无需手动导出 cookies！** 脚本会自动从本地 Chrome 浏览器提取登录态。
+> 只需在你自己的电脑上（已登录 Google）运行即可。
+
 ## 核心脚本
 
 **`scripts/get_accompaniment.py`**
 
-### 四种使用模式
+### 使用模式
 
 ```bash
-# 1. 搜索 YouTube + 下载 + 分离
+# 1. 搜索 YouTube + 下载 + 分离（自动用浏览器 cookies）
 python3 scripts/get_accompaniment.py "歌名" "歌手名"
 
 # 2. 直接提供视频 URL
@@ -25,7 +28,7 @@ python3 scripts/get_accompaniment.py --url "https://youtube.com/watch?v=xxx"
 # 3. 处理本地音频文件
 python3 scripts/get_accompaniment.py --file /path/to/song.mp3
 
-# 4. 带 cookies（免 YouTube bot 验证）
+# 4. 显式指定 cookies 文件（浏览器不可用时）
 python3 scripts/get_accompaniment.py "歌名" "歌手" --cookies cookies.txt
 ```
 
@@ -43,7 +46,7 @@ python3 scripts/get_accompaniment.py "歌名" "歌手" --cookies cookies.txt
 | `--url` | 直接指定视频 URL |
 | `--file (-f)` | 处理本地音频文件 |
 | `--output (-o)` | 输出目录 |
-| `--cookies` | YouTube cookies 文件路径 |
+| `--cookies` | YouTube cookies 文件路径（可选，默认用浏览器） |
 | `--json` | JSON 格式输出（供 agent 解析） |
 
 ## 工作流程
@@ -54,11 +57,10 @@ python3 scripts/get_accompaniment.py "歌名" "歌手" --cookies cookies.txt
 1. 用网页抓取 YouTube 搜索结果（无需 cookies）
 2. 选择第一个匹配结果
 3. 用 `yt-dlp` 下载音频（mp3，192kbps）
+4. 自动通过 `--cookies-from-browser chrome` 提取浏览器登录态
 
-> ⚠️ 当前 YouTube 对未认证请求做 bot 限制。首次使用需提供 cookies：
-> - Chrome 安装扩展 "Get cookies.txt LOCALLY"（本地运行，数据不出本地）
-> - 访问 youtube.com 登录后导出 cookies.txt
-> - 放入 `~/.yt-dlp/cookies.txt` 或运行时 `--cookies` 指定
+> ⚠️ 如果 Chrome 不可用或未登录，脚本会报 "NEEDS_COOKIES"。
+> 此时可用 `--cookies cookies.txt` 手动指定 cookies 文件。
 >
 > **🔒 安全说明**：cookies 仅传递给 yt-dlp 用于 YouTube 下载认证，不会上传到其他服务。用完后建议删除 cookies 文件。
 
