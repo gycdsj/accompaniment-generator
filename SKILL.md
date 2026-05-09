@@ -56,9 +56,11 @@ python3 scripts/get_accompaniment.py "歌名" "歌手" --cookies cookies.txt
 3. 用 `yt-dlp` 下载音频（mp3，192kbps）
 
 > ⚠️ 当前 YouTube 对未认证请求做 bot 限制。首次使用需提供 cookies：
-> - Chrome 安装扩展 "Get cookies.txt LOCALLY"
+> - Chrome 安装扩展 "Get cookies.txt LOCALLY"（本地运行，数据不出本地）
 > - 访问 youtube.com 登录后导出 cookies.txt
 > - 放入 `~/.yt-dlp/cookies.txt` 或运行时 `--cookies` 指定
+>
+> **🔒 安全说明**：cookies 仅传递给 yt-dlp 用于 YouTube 下载认证，不会上传到其他服务。用完后建议删除 cookies 文件。
 
 **本地文件：**
 直接传入文件路径，跳过下载。

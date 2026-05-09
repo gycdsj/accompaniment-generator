@@ -101,7 +101,6 @@ def download_youtube_audio(video_url, output_path, cookies_file=None):
         'yt-dlp', '-f', 'bestaudio/best',
         '--extract-audio', '--audio-format', 'mp3',
         '--audio-quality', '192k',
-        '--remote-components', 'ejs:github',
         '-o', os.path.join(output_path, '%(title)s.%(ext)s'),
         '--no-warnings',
     ]
