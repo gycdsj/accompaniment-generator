@@ -105,6 +105,9 @@ def download_youtube_audio(video_url, output_path, cookies_file=None):
         '--no-warnings',
     ]
 
+    # YouTube 可能需要指定客户端类型以配合 cookies
+    cmd.extend(['--extractor-args', 'youtube:player_client=web_safari'])
+
     # 添加 JS 运行时（用于 YouTube 签名解算）
     deno_path = os.path.expanduser("~/.deno/bin/deno")
     if os.path.exists(deno_path):
